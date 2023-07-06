@@ -1,10 +1,13 @@
 //jshint esversion:6
-require("dotenv").config()
+// require("dotenv").config()
 const express = require("express");
 const bodyparser = require("body-parser")
 const ejs = require("ejs");
 const mongoose = require("mongoose");
 const encrypt = require("mongoose-encryption");
+// var fs = require('fs');
+
+var md5 = require('md5');
 
 
 const app = express();
@@ -20,8 +23,8 @@ const userSchema = new mongoose.Schema({
     password: String
 });
 
-console.log(process.env.SECRETKEY);
-userSchema.plugin(encrypt, { secret: process.env.SECRETKEY, encryptedFields: ["password"] });
+// console.log(process.env.SECRETKEY);
+// userSchema.plugin(encrypt, { secret: process.env.SECRETKEY, encryptedFields: ["password"] });
 const User = new mongoose.model("users", userSchema)
 
 
@@ -41,7 +44,7 @@ app.post("/register", function (req, res) {
     const newUser = User({
 
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     });
     console.log(newUser);
     newUser.save()
@@ -56,7 +59,7 @@ app.post("/register", function (req, res) {
 
 app.post("/login", (async (req, res) => {
     userName = req.body.username;
-    Password = req.body.password;
+    Password = md5(req.body.password);
     try {
         const founditems = await User.findOne({ email: userName });
         if (founditems.email === userName) {
