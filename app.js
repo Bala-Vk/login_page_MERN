@@ -7,7 +7,13 @@ const mongoose = require("mongoose");
 const encrypt = require("mongoose-encryption");
 // var fs = require('fs');
 
-var md5 = require('md5');
+// var md5 = require('md5');
+var bcrypt = require('bcryptjs');
+var salt = bcrypt.genSaltSync(10);
+
+var hashing = bcrypt.hashSync('123', 10);
+console.log(hashing);
+
 
 
 const app = express();
@@ -41,35 +47,40 @@ app.get("/register", function (req, res) {
 })
 
 app.post("/register", function (req, res) {
-    const newUser = User({
-
-        email: req.body.username,
-        password: md5(req.body.password)
+    bcrypt.hash(req.body.password, salt, function (err, hash) {
+        const newUser = User({
+            email: req.body.username,
+            password: hash
+        });
+        console.log(newUser);
+        newUser.save()
+            .then(() => {
+                res.render("secrets")
+            })
+            .catch((err) => {
+                console.log(err);
+            })
     });
-    console.log(newUser);
-    newUser.save()
-        .then(() => {
-            res.render("secrets")
-        })
-        .catch((err) => {
-            console.log(err);
-
-        })
 })
 
+
 app.post("/login", (async (req, res) => {
+
     userName = req.body.username;
-    Password = md5(req.body.password);
+    Password = req.body.password;
+    console.log(userName + "  " + Password);
     try {
         const founditems = await User.findOne({ email: userName });
         if (founditems.email === userName) {
-            if (founditems.password === Password) {
-                console.log(founditems);
-                res.render("secrets")
-            }
-            else {
-                res.send("Password is incorrect")
-            }
+            bcrypt.compare(req.body.password, founditems.password, function (err, result) {
+                if (result === true) {
+                    console.log(founditems);
+                    res.render("secrets")
+                }
+                else {
+                    res.send("Password is incorrect")
+                }
+            });
         }
         else {
             res.send("enter Valid Email Id and Password")
